@@ -125,7 +125,7 @@ def generate_all() -> list[str]:
     written = []
 
     def write(path: str, content: str):
-        with open(path, "w") as f:
+                with open(path, "w", encoding="utf-8") as f:
             f.write(content)
         written.append(path)
 
