@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+platform.duckdb
+warehouse/target/
+warehouse/logs/
+warehouse/dbt_packages/
+logs/
+.pytest_cache/
+.user.yml

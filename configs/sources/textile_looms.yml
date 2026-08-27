@@ -1,0 +1,17 @@
+# Source template — textile-industry loom energy feed (JSON lines, megawatt-hours).
+# Same canonical schema as every other source; only this file differs.
+source_name: textile_looms
+industry: textile
+description: Loom-floor energy readings pushed as JSON lines by the site gateway.
+format: jsonl
+path_glob: data/samples/textile_looms/*.jsonl
+energy_unit: MWh
+field_map:
+  ts: reading_ts
+  site: facility_id
+  energy_mwh: energy_value
+validation:
+  required: [reading_ts, facility_id, energy_value]
+  energy_value:
+    min: 0
+    max: 100

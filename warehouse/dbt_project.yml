@@ -1,0 +1,14 @@
+name: template_driven_ingestion
+version: "1.0.0"
+profile: template_driven_ingestion
+
+model-paths: ["models"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  template_driven_ingestion:
+    staging:
+      +materialized: view
+    marts:
+      +materialized: table

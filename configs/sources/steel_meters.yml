@@ -1,0 +1,17 @@
+# Source template — steel-industry plant electricity meters.
+# Onboarding a source = copying this template and filling it in. No Python required.
+source_name: steel_meters
+industry: steel
+description: Plant electricity meters, hourly interval CSV export from the metering vendor.
+format: csv                      # csv | jsonl
+path_glob: data/samples/steel_meters/*.csv
+energy_unit: kWh                 # kWh | MWh | MJ — normalized to kWh in the generated staging model
+field_map:                       # source column -> canonical field
+  meter_ts: reading_ts
+  plant_code: facility_id
+  kwh: energy_value
+validation:
+  required: [reading_ts, facility_id, energy_value]
+  energy_value:
+    min: 0
+    max: 100000

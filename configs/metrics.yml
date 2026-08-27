@@ -1,0 +1,19 @@
+# Centralized calculated-metric registry.
+# A metric is defined once, here, and rendered into marts/facility_daily_v1.sql
+# by `make generate`. Analysts and dashboards read the mart; nobody re-implements
+# "daily energy" slightly differently in four places.
+model: facility_daily_v1
+grain: [facility_id, industry, reading_date]
+metrics:
+  - name: daily_energy_kwh
+    description: Total energy consumed per facility per day, in kWh.
+    expression: sum(energy_kwh)
+  - name: reading_count
+    description: Number of readings received that day (gap detection).
+    expression: count(*)
+  - name: peak_reading_kwh
+    description: Largest single reading of the day.
+    expression: max(energy_kwh)
+  - name: avg_reading_kwh
+    description: Mean reading size; with hourly sources this approximates average load in kW.
+    expression: avg(energy_kwh)

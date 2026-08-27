@@ -1,0 +1,19 @@
+# Source template — chemical-industry SCADA export (CSV, megajoules).
+# This feed is deliberately messy in the sample data: rows with missing unit ids,
+# negative energy, and unparseable timestamps land in raw.quarantine with a reason,
+# and the load still reconciles: source_rows == landed + quarantined.
+source_name: chem_scada
+industry: chemicals
+description: SCADA historian export; energy in MJ; known to contain malformed rows.
+format: csv
+path_glob: data/samples/chem_scada/*.csv
+energy_unit: MJ
+field_map:
+  timestamp: reading_ts
+  unit_id: facility_id
+  energy_mj: energy_value
+validation:
+  required: [reading_ts, facility_id, energy_value]
+  energy_value:
+    min: 0
+    max: 1000000

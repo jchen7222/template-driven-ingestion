@@ -1,0 +1,20 @@
+# Local/CI target is DuckDB — free, in-process, zero setup.
+# The generated models use only portable SQL (md5, concat_ws, date_trunc),
+# so pointing the `snowflake` target at a real account runs the same project
+# unchanged. That mirrors the original platform, which ran on Snowflake.
+template_driven_ingestion:
+  target: duckdb
+  outputs:
+    duckdb:
+      type: duckdb
+      path: "{{ env_var('PLATFORM_DB', '../platform.duckdb') }}"
+      threads: 4
+    # snowflake:
+    #   type: snowflake
+    #   account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+    #   user: "{{ env_var('SNOWFLAKE_USER') }}"
+    #   password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+    #   database: ANALYTICS
+    #   warehouse: TRANSFORMING
+    #   schema: PUBLIC
+    #   threads: 8

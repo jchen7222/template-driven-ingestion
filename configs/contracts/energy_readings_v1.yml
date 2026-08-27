@@ -1,0 +1,16 @@
+# Versioned public contract for the analysts' main model.
+# Rule: additive_only — columns may be added; existing columns may never be
+# removed or change type. `make check` fails the build on any violation,
+# which is what keeps downstream SQL stable across 24 industries.
+model: energy_readings_v1
+version: 1
+evolution: additive_only
+columns:
+  - {name: reading_id,      type: VARCHAR,   description: Stable hash of (source, facility, timestamp)}
+  - {name: facility_id,     type: VARCHAR,   description: Facility code as reported by the source}
+  - {name: industry,        type: VARCHAR,   description: Industry the source belongs to (from its template)}
+  - {name: source_name,     type: VARCHAR,   description: Which source template produced the row}
+  - {name: reading_ts,      type: TIMESTAMP, description: Reading timestamp (UTC)}
+  - {name: energy_kwh,      type: DOUBLE,    description: Energy normalized to kWh, whatever unit the source reports}
+  - {name: pipeline_run_id, type: VARCHAR,   description: Load that produced this row — full lineage in raw.run_audit}
+  - {name: loaded_at,       type: TIMESTAMP, description: When the row landed}
