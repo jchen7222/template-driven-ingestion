@@ -1,26 +1,99 @@
 name: ci
 
+# template-driven-ingestion. Every step is a `make` target, which matters for reading
+# failures: GNU make exits 2 for EVERYTHING — a recipe returning 1, a recipe returning 5,
+# a target that does not exist. MEASURED:
+#     recipe exits 1            -> make: *** [Makefile:5: fail1] Error 1     -> make exits 2
+#     recipe exits 5            -> make: *** [Makefile:8: fail5] Error 5     -> make exits 2
+#     pytest collection error   -> make: *** [Makefile:11: test]  Error 2    -> make exits 2
+#     target does not exist     -> make: *** No rule to make target 'x'. Stop -> make exits 2
+# So "Process completed with exit code 2" says nothing about the cause. The line that
+# does is  `make: *** [Makefile:<line>: <target>] Error <real code>`  — that names the
+# target and the inner exit code. Find that line, not the exit code.
+
 on:
   push:
+    branches: [main]      # was bare `push:` — that plus pull_request runs every PR twice
   pull_request:
+  workflow_dispatch: {}
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   pipeline:
     runs-on: ubuntu-latest
+    timeout-minutes: 20            # a hung dbt or a wedged loader must not burn six hours
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      # Node-24 majors. Node 20 is REMOVED from runners on 2026-09-23.
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
+          cache: pip               # was missing — ~40s a run
+
       - name: Install dependencies
         run: pip install -r requirements.txt
+
+      # If the repo has a pyproject.toml / setup.py and the tests import the package by
+      # name (`from ingest import …`), CI needs this or collection fails on import —
+      # it works locally only because of an editable install you already have.
+      # Delete this step if there is no packaging file.
+      - name: Install the package itself (editable)
+        run: |
+          if [ -f pyproject.toml ] || [ -f setup.py ]; then
+            pip install -e .
+          else
+            echo "no pyproject.toml / setup.py — skipping editable install"
+          fi
+
+      # Costs one second and turns "No rule to make target" into a named, obvious failure
+      # at the top of the log instead of a red X five steps down.
+      - name: Preflight — list the Makefile's targets
+        continue-on-error: true
+        run: |
+          echo "--- targets defined in the Makefile ---"
+          make -qp 2>/dev/null \
+            | awk -F: '/^[a-zA-Z0-9][^$#\/\t=]*:([^=]|$)/ {print $1}' \
+            | sort -u
+          echo "--- dry run of what this workflow calls ---"
+          make -n samples generate load build check test >/dev/null \
+            && echo "all targets resolve" \
+            || echo "::warning title=make targets::at least one target above does not resolve"
+
       - name: Generate models from templates
         run: make samples generate
+        # NOTE: two targets on one line. make runs them left to right and STOPS at the
+        # first failure — including "No rule to make target 'samples'". If `samples` is
+        # not actually a target (a variable? a directory?), this step is your exit 2.
+
       - name: Load raw data (idempotent, reconciled)
         run: make load
+
       - name: Build warehouse (dbt models + tests)
         run: make build
+
       - name: Enforce the versioned model contract
         run: make check
+
       - name: Unit tests
         run: make test
+
+      # dbt's compiled SQL and run_results are what you need on a red build, and they die
+      # with the runner. Also grabs the generated models, since this pipeline writes them.
+      - name: Keep the artifacts when it breaks
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: pipeline-artifacts
+          path: |
+            dbt/target/
+            dbt/logs/
+            target/
+            logs/
+            models/generated/
+          retention-days: 7
+          if-no-files-found: ignore
