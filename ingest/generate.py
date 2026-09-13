@@ -61,8 +61,8 @@ def _sources_yml(configs: list[dict]) -> str:
     lines = [YML_HEADER, "version: 2", "", "sources:", "  - name: raw", "    schema: raw", "    tables:"]
     for cfg in configs:
         lines.append(f"      - name: src_{cfg['source_name']}")
-    lines.append("      - name: run_audit")
-    lines.append("      - name: quarantine")
+        lines.append("      - name: run_audit")
+        lines.append("      - name: quarantine")
     return "\n".join(lines) + "\n"
 
 
@@ -127,13 +127,13 @@ def generate_all() -> list[str]:
     def write(path: str, content: str):
           with open(path, "w", encoding="utf-8") as f:
             f.write(content)
-        written.append(path)
+            written.append(path)
 
     for cfg in configs:
         write(os.path.join(STAGING_DIR, f"stg_{cfg['source_name']}.sql"), _staging_sql(cfg))
-    write(os.path.join(STAGING_DIR, "schema.yml"), _staging_schema_yml(configs))
-    write(os.path.join(STAGING_DIR, "sources.yml"), _sources_yml(configs))
-    write(os.path.join(MARTS_DIR, "energy_readings_v1.sql"), _mart_union_sql(configs))
-    write(os.path.join(MARTS_DIR, f"{metrics['model']}.sql"), _mart_daily_sql(metrics))
-    write(os.path.join(MARTS_DIR, "schema.yml"), _marts_schema_yml(metrics))
+        write(os.path.join(STAGING_DIR, "schema.yml"), _staging_schema_yml(configs))
+        write(os.path.join(STAGING_DIR, "sources.yml"), _sources_yml(configs))
+        write(os.path.join(MARTS_DIR, "energy_readings_v1.sql"), _mart_union_sql(configs))
+        write(os.path.join(MARTS_DIR, f"{metrics['model']}.sql"), _mart_daily_sql(metrics))
+        write(os.path.join(MARTS_DIR, "schema.yml"), _marts_schema_yml(metrics))
     return written
