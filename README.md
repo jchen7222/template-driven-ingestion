@@ -48,6 +48,7 @@ data/ ──┴─► raw.src_<source>  ────────► dbt build �
 ```bash
 pip install -r requirements.txt
 make all        # samples → generate → load → dbt build → contract check → pytest
+make export     # contract-checked energy_readings_v1.jsonl + total_kwh, for consumers
 make audit      # per-batch reconciliation report + quarantine reasons
 ```
 
