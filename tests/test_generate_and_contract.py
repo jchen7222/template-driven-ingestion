@@ -64,3 +64,38 @@ def test_contract_fails_on_type_change(tmp_path):
     ok, messages = check_contract(database=db)
     assert not ok
     assert any("type changed" in m for m in messages)
+
+
+def test_export_writes_contract_rows_and_total(tmp_path):
+    import json
+
+    from ingest.export import export_contract
+
+    db = str(tmp_path / "e.duckdb")
+    _build_conforming_table(db, extra_col=True)
+    con = duckdb.connect(db)
+    con.execute("insert into energy_readings_v1 values "
+                "('b', 'F2', 'steel', 'steel_meters', '2024-03-01 01:00:00', 2.5, 'r1',"
+                " '2024-03-02 00:00:00', 'OK'),"
+                "('a', 'F1', 'chem', 'chem_scada', '2024-03-01 00:00:00', 1.25, 'r1',"
+                " '2024-03-02 00:00:00', 'OK')")
+    con.close()
+    out = str(tmp_path / "out.jsonl")
+    result = export_contract(out, database=db)
+    assert result["rows"] == 2 and result["total_kwh"] == 3.75
+    lines = open(out).read().splitlines()
+    first = json.loads(lines[0])
+    assert first["reading_id"] == "a"                 # ordered by reading_id
+    assert first["reading_ts"] == "2024-03-01T00:00:00"
+    assert "quality_flag" not in first                # only contracted columns cross
+
+
+def test_export_refuses_when_contract_fails(tmp_path):
+    import pytest
+
+    from ingest.export import export_contract
+
+    db = str(tmp_path / "d.duckdb")
+    _build_conforming_table(db, drop_col="energy_kwh")
+    with pytest.raises(RuntimeError):
+        export_contract(str(tmp_path / "out.jsonl"), database=db)

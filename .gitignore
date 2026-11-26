@@ -7,3 +7,4 @@ warehouse/dbt_packages/
 logs/
 .pytest_cache/
 .user.yml
+energy_readings_v1.jsonl

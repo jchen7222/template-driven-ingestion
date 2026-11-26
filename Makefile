@@ -1,5 +1,5 @@
 # Run everything from the repository root.
-.PHONY: all samples generate load build check audit test clean
+.PHONY: all samples generate load build check export audit test clean
 
 all: samples generate load build check test
 
@@ -17,6 +17,9 @@ build:
 
 check:
 	python3 -m ingest check
+
+export:
+	python3 -m ingest export
 
 audit:
 	python3 -m ingest audit

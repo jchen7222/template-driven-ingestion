@@ -1,4 +1,4 @@
-"""CLI: python -m ingest {generate|load|check|audit}"""
+"""CLI: python -m ingest {generate|load|check|export|audit}"""
 from __future__ import annotations
 
 import sys
@@ -39,6 +39,20 @@ def _cmd_check() -> int:
     return 0 if ok else 1
 
 
+def _cmd_export() -> int:
+    from .export import export_contract
+    try:
+        result = export_contract()
+    except RuntimeError as exc:
+        print(exc, file=sys.stderr)
+        return 1
+    print(f"exported {result['rows']} rows of {result['model']} v{result['version']} "
+          f"to {result['path']}")
+    # Fixed-point, never exponent notation: CI reads this line with a regex.
+    print(f"total_kwh {result['total_kwh']:.6f}")
+    return 0
+
+
 def _cmd_audit() -> int:
     from .loader import db_path
     con = duckdb.connect(db_path(), read_only=True)
@@ -58,7 +72,7 @@ def _cmd_audit() -> int:
 
 def main() -> int:
     commands = {"generate": _cmd_generate, "load": _cmd_load,
-                "check": _cmd_check, "audit": _cmd_audit}
+                "check": _cmd_check, "export": _cmd_export, "audit": _cmd_audit}
     if len(sys.argv) != 2 or sys.argv[1] not in commands:
         print(f"usage: python -m ingest {{{'|'.join(commands)}}}", file=sys.stderr)
         return 2
